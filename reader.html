@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html ng-app="app">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,minimal-ui">
+		<meta name="format-detection" content="telephone=no">
+		<link rel="stylesheet" href="css/index.css" type="text/css">
+		
+	</head>
+	<body>
+       
+<div id="root" class="container">
+ <!--artical-action-mid-->
+        <div class="m-artical-action">
+           <div class="artical-action-mid" id="action_mid"></div>
+        </div>
+        <!--top-nav-->
+        <div class="top-nav" id="top-nav" style="display:none;">
+           <div class="icon-back"></div>
+           <div class="nav-title">返回书架</div>
+        </div>
+         <!--top-nav end-->
+        <div id="fition_chapter_title">
+        </div>
+        <!--fiction_container-->
+        <div id="fiction_container" class="m-read-content"> 
+   
+        </div>
+         <!--fiction_container end-->
+       
+        <!--底部边栏区域-->
+         <div class="bottom-nav bottom_nav" style="display:none;">
+             <div class="item menu-button" id="menu_button">
+                 <div class="item-wrap">
+                    <div class="icon-menu"></div>
+                    <div class="icon-text">目录</div>
+                  </div>
+             </div>
+             <div class="item font-button" id="font_button">
+                 <div class="item-wrap font_bl">
+                    <div class="icon-ft "></div>
+                    <div class="icon-text">字体</div>
+             </div>
+                 <div class="item-wrap font_red" style="display:none;">
+                    <div class="icon-red "></div>
+                    <div class="icon-text">字体</div>
+                 </div>
+                 
+              </div>
+               <div class="item night-button" id="night_button">
+               <div class="item-wrap day_nig"style="display:none;" >
+                    <div class="icon-day"></div>
+                    <div class="icon-text">白天</div>
+                  </div>
+                <div class="item-wrap day_night" >
+                    <div class="icon-night"></div>
+                    <div class="icon-text">夜间</div>
+                  </div>
+              
+          </div>
+ </div>
+          <!--bottom-nav end-->
+         <!--面板区域-->
+        <div class="nav-pannel-bk font-container" style="display:none;"></div>
+        <div class="nav-pannel font-container" style="display:none;">
+             <div class="child-mod">
+                 <span>字号</span>
+                 <button id="large-font" class="font-size-button">大</button>
+                 <button id="small-font" class="font-size-button">小</button>
+              </div>
+              <div class="child-mod">
+                 <span>背景</span>
+                 <div class="bk-container">
+                    <div class="bk-container-current"></div>
+                 </div>
+                 <div class="bk-container">
+                    <div class="bk-container-current"></div>
+                 </div>
+                 <div class="bk-container">
+                    <div class="bk-container-current"></div>
+                 </div>
+                 <div class="bk-container">
+                    <div class="bk-container-current"></div>
+                 </div>
+                 <div class="bk-container">
+                    <div class="bk-container-current"></div>
+                 </div>
+                  
+              </div>
+        </div>
+        <!--字体面板 end-->
+          <!--m-button-bar star-->
+        <div class="m-button-bar">
+              <ul class="u-tab">
+                  <li id="prev_button">上一张</li>
+                  <li id="next_button">下一张</li>
+              </ul>
+         </div>
+         <!--m-button-bar end-->
+
+</div>
+ <script src="js/zepto.min.js"></script>
+ <script>
+   window.jQuery = $;
+ </script>
+<script src="js/jquery.base64.js"></script>	
+<script src="js/jquery.jsonp.js"></script>
+
+
+<script>
+(function(){
+	//封装一个函数
+var Util=(function(){
+	var  prefix="html5_hader_";
+	var StorageGetter=function(key){
+		return localStorage.getItem(prefix+key);
+	};
+	var StorageSetter=function(key,val){
+		return localStorage.setItem(prefix+key,val);
+	};
+	
+	var getBSONP=function(url,callback){
+		return $.jsonp({
+			url:url,
+			cache:true,
+			callback:'duokan_fiction_chapter',
+			success:function(result){
+				var data = $.base64.decode(result);
+				var json = decodeURIComponent(escape(data));
+				callback(json);
+				}
+		})
+    };
+  
+  //暴露出口
+     return {
+			 getBSONP:getBSONP,
+			 StorageGetter:StorageGetter,
+			 StorageSetter:StorageSetter
+			 };
+})();
+//获取元素	
+	var Don={
+		action_mid:$("#action_mid"),
+		top_nav:$("#top-nav"),
+		bottom_nav:$(".bottom-nav"),
+		night_bottun:$('#night_button'),
+		font_container:$(".font-container"),
+		font_button:$("#font_button")	
+	}; 
+	var Win=$(window);
+	var Dom=$(document);
+	var redaerModer;
+	var  readerUI;
+	var RootContainer=$("#fiction_container");
+	var initFontSize=Util.StorageGetter('font_size');
+		initFontSize=parseInt(initFontSize);
+		if(!initFontSize){
+		initFontSize=14;
+		}
+		RootContainer.css('font-size',initFontSize);
+	var bg_color=Util.StorageGetter('background_color');
+        RootContainer.css('background-color',bg_color);
+	var day_nig=$('#night_button .day_nig');
+	var day_night= $('#night_button .day_night');
+	var bk_container=$('.bk-container');
+	var font_red=$('#font_button .font_red');
+	var font_bl=$('#font_button .font_bl');
+	var chapter_data=Util.StorageGetter('last_chapter_id');
+//入口函数
+function main(){
+		   redaerModer=ReaderModel();
+		   readerUI = ReaderBaseFrame();
+		   redaerModer.init(function(data){
+			 ReaderBaseFrame(RootContainer); 
+			 readerUI(data);
+			  });
+	     EventHanlder();
+		}
+	function ReaderModel(){
+		//实现和阅读器相关的数据交互的方法
+		var chapter_id;
+		var chapterTotal;
+		var init=function(UIcallback){
+			getFictionInto(function(){
+				getCurChapterContent(chapter_id,function(data){
+				  UIcallback&&UIcallback(data);
+				});
+			});
+		};
+		var getFictionInto=function(callback){
+			$.get("data/chapter.json",function(data){
+				//获取章节信
+			  last_chapter_id=Util.StorageGetter('last_chapter_id');
+			  
+			  if(chapter_id==null){
+				
+				chapter_id=data.chapters[1].chapter_id;
+			  };
+				chapterTotal=data.chapters.length;
+				callback && callback();
+				
+				},'json');
+		};
+		var getCurChapterContent=function(chapter_id,callback){
+			$.get("data/data" + chapter_id + '.json',
+			 function(data){
+			   if(data.result==0){
+				  var url=data.jsonp;
+					Util.getBSONP(url,function(data){
+					callback && callback(data);
+					});
+					
+				}
+			},'json');
+		};
+		var prevChapter=function(UIcallback){
+			chapter_id=parseInt(chapter_id,10);
+			if(chapter_id==0) return;
+			   chapter_id-=1;
+			getCurChapterContent(chapter_id,UIcallback);
+			Util.StorageSetter('last_chapter',chapter_id);
+		};
+		
+	    var nextChapter=function(UIcallback){
+			chapter_id=parseInt(chapter_id,10);
+			if(chapter_id == chapterTotal) return;
+			  chapter_id+=1;
+			getCurChapterContent(chapter_id,UIcallback);
+			Util.StorageSetter('last_chapter_id',chapter_id);
+			
+		};
+		
+	 return {init:init,
+	         prevChapter:prevChapter,
+			 nextChapter:nextChapter
+			 };
+		
+};
+	//渲染基本的UI 结构
+function ReaderBaseFrame(){
+		
+		function parseChacpterData(jsonData){
+			var jsonObj=JSON.parse(jsonData);
+			var html ='<h4>'+jsonObj.t+'</h4>';
+			for(var i=0;i<jsonObj.p.length;i++){
+				html+='<p>'+jsonObj.p[i]+'</p>';
+			};
+			return html;
+		}
+		return function(data){
+			$('#fiction_container').html(parseChacpterData(data));
+		}
+};	
+ //事件交互
+function  EventHanlder(){
+	
+	//点击阅读器文章的中间区域换出边栏面板的交互	
+	Don.action_mid.click(function(){
+		if(Don.bottom_nav.css('display')=='none'){
+			Don.bottom_nav.show();
+			Don.top_nav.show();
+			font_bl.show();
+			font_red.hide();
+		}else{
+			Don.bottom_nav.hide();
+			Don.top_nav.hide();
+			Don.font_container.hide();
+			font_red.show();
+			font_bl.hide();
+	        }
+	});
+	//滚动条滚动时交互
+	Win.scroll(function(){
+				Don.bottom_nav.hide();
+				Don.top_nav.hide();
+				Don.font_container.hide();
+				font_bl.hide();
+	 });
+	 //点击夜间模式与白天模式的切换
+	
+	day_night.click(function(){
+			var bg_color=bk_container.eq(4).css('background-color');    
+				day_nig.show();
+				day_night.hide();
+				$('#root').css('background-color',bg_color);
+				RootContainer.css('background-color',bg_color);
+				Util.StorageSetter('background_color',bg_color);
+	});
+	
+	day_nig.click(function(){
+			var bg_color=bk_container.eq(0).css(
+			         'background-color'); 
+				 day_nig.hide();
+				 day_night.show();
+				$('#root').css('background-color',bg_color);
+				RootContainer.css('background-color',bg_color);
+				Util.StorageSetter('background_color',bg_color);
+	});
+	//点击bottom_nav中字体按钮的交互
+	
+	Don.font_button.click(function(){
+		if(Don.font_container.css('display')=='none'){
+			Don.font_container.show();
+			font_red.show();
+			font_bl.hide();
+	    }else{
+			Don.font_container.hide();
+			font_red.hide();
+			font_bl.show();
+	};
+	});
+	
+	//点击字体变大按钮的交互
+	 $("#large-font").click(function(){
+		 if(initFontSize>20) return;
+			initFontSize+=1;
+			RootContainer.css('font-size',initFontSize);
+			Util.StorageSetter('font_size',initFontSize);
+	 });
+	 //点击字体变小按钮的交互
+	$("#small-font").click(function(){
+		if(initFontSize<14) return;
+			initFontSize-=1;
+			RootContainer.css('font-size',initFontSize);
+			Util.StorageSetter('font_size',initFontSize);
+	});
+	//点击颜色面板的交互
+	$('.bk-container').click(function(){
+		var bg_color=$(this).css('background-color');
+			RootContainer.css('background-color',bg_color);
+			Util.StorageSetter('background_color',bg_color);
+	});
+	//点击上一页的事件交互
+   $('#prev_button').click(function(){
+	   redaerModer.prevChapter(function(data){
+		   readerUI(data);
+		
+		 });
+	});
+	//点击下一页的事件交互
+	$('#next_button').click(function(){
+		//获取章节的翻页数据-把数据拿出来渲染
+	redaerModer.nextChapter(function(data){
+		 readerUI(data);
+		 
+		});
+	 
+	});
+	
+	
+	
+};
+//执行函数		
+main();		
+
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 }  
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	  
+	
+	
+	</body>
+</html>
